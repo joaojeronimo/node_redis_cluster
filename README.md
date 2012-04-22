@@ -2,7 +2,7 @@
 ## A thin layer over node_redis to handle Redis Clusters
 
 
-Redis Cluster is comming out later this year, but I can't wait for it so I made this module.
+Redis Cluster is coming out later this year, but I can't wait for it so I made this module.
 
 All it does is connect to the nodes of a Redis Cluster, and before sending any commands it checks in which slot the key is with `HASH_SLOT = CRC16(key) mod 4096` and then sends the command to the node that has that slot.
 
@@ -33,7 +33,7 @@ new RedisCluster(firstLink, function (err, r) {
 });
 ```
 
-Don't forget that despite being a thin wrapper above `node_redis`, you still can't use all the commands you would use against a normal Redis server. For instance, don't expect the `KEYS` command to work (infact, in the [Redis Cluster spec](http://redis.io/topics/cluster-spec) it says that "all the operations where in theory keys are not available in the same node are not implemented").
+Don't forget that despite being a thin wrapper above `node_redis`, you still can't use all the commands you would use against a normal Redis server. For instance, don't expect the `KEYS` command to work (in fact, in the [Redis Cluster spec](http://redis.io/topics/cluster-spec) it says that "all the operations where in theory keys are not available in the same node are not implemented").
 
 # But Redis Cluster is unstable!
 
@@ -77,3 +77,7 @@ Some quick test showed it achieved a very similar performance to the `node_redis
 # Other notes
 
 This is of course not intended for production and has probably stupid (not bad, stupid) code inside, but I just needed something that works as there are no decent modules to work with Redis Clusters yet. It's also my first nodejs module so go easy on me and don't send me something like [this epic pull request](https://github.com/zenorocha/jquery-boilerplate/pull/10).
+
+# Credits
+
+This module shamelessly borrows some code from the mranney's `node_redis` module and alexgorbatchev's `node-crc`, although I didn't feel the need to include it as a dependency because only CRC16 is needed.
