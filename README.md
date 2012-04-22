@@ -18,7 +18,7 @@ This module exports two objects. `clusterClient` is to be used with a regular Re
 var RedisCluster = require('redis-cluster').clusterClient;
 var assert = require('assert');
 
-var firstLink = '127.0.0.1:6379' // Used to discover the rest of the cluster
+var firstLink = '127.0.0.1:6379'; // Used to discover the rest of the cluster
 new RedisCluster(firstLink, function (err, r) {
   if (err) throw err;
   r.set('foo', 'bar', function (err, reply) {
@@ -49,7 +49,7 @@ var cluster = [
   {name: 'redis01', link: '127.0.0.1:6379', slots: [0, 1364]},
   {name: 'redis02', link: '127.0.0.1:7379', slots: [1364, 2370]},
   {name: 'redis03', link: '127.0.0.1:8379', slots: [2370, 4096]}
-]
+];
 
 new poorMansClusterClient(cluster, function (err, r) {
   if (err) throw err;
@@ -62,7 +62,7 @@ new poorMansClusterClient(cluster, function (err, r) {
       assert.equal(reply, 'bar');
     });
   });
-}
+});
 ```
 As you noticed, you must specify the interval of slots allocated to each node. All 4096 slots must be covered, otherwise you will run in some nasty errors (some keys might have no where to go).
 
