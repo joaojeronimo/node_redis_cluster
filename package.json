@@ -5,12 +5,12 @@
     "main": "./index.js",
     "dependencies" : {
         "redis" : "0.7.x"
-    }
+    },
     "optionalDependencies": {
         "hiredis": "*"
-    }
+    },
     "repository": {
         "type": "git",
-        "url": "git://github.com/joaojeronimo/node_redis_cluster.git"
+        "url": "git@github.com:joaojeronimo/node_redis_cluster.git"
     }
 }
