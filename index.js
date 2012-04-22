@@ -7,6 +7,11 @@ var connectToLink = function(str) {
   return (redis.createClient(spl[1], spl[0]));
 }
 
+/*
+  Connect to a node of a Redis Cluster, discover the other nodes and
+  respective slots with the "CLUSTER NODES" command, connect to them
+  and return an array of the links to all the nodes in the cluster.
+*/
 function connectToNodesOfCluster (firstLink, callback) {
   var redisLinks = [];
   var fireStarter = connectToLink(firstLink);
@@ -38,6 +43,18 @@ function connectToNodesOfCluster (firstLink, callback) {
   });
 }
 
+/*
+  Connect to all the nodes that form a cluster. Takes an array in the form of
+  [
+    {name: "node1", link: "127.0.0.1:6379", slots: [0, 2048]},
+    {name: "node2", link: "127.0.0.1:7379", slots: [2048, 4096]},
+  ]
+
+  You decide the allocation of the 4096 slots, but they must be all covered, and
+  if you decide to add/remove a node from the "cluster", don't forget to MIGRATE
+  the keys accordingly to the new slots allocation.
+
+*/
 function connectToNodes (cluster, callback) {
   var redisLinks = [];
   var n = cluster.length;
@@ -63,12 +80,12 @@ function bindCommands (client, nodes, callback) {
         var slot = redisClusterSlot(o_arguments[0]);
         var n = nodes.length;
         while (n--) {
-          var node = nodes[n];
-          var slots = node.slots
-          if ((slot > slots[0]) && (slot <= slots[1])) {
-            node.link.send_command(command, o_arguments, o_callback);
-            break;
-          }
+          (function (node, command, o_arguments, o_callback) {
+            var slots = node.slots
+            if ((slot > slots[0]) && (slot <= slots[1])) {
+              node.link.send_command(command, o_arguments, o_callback);
+            }
+          })(nodes[n], command, o_arguments, o_callback);
         }
       }
     })(commands[c], client, nodes);
@@ -76,7 +93,6 @@ function bindCommands (client, nodes, callback) {
       callback(null, client);
     }
   }
-  callback(null, client)
 }
 
 clusterClient = function (firstLink, callback) {
