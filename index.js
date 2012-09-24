@@ -2,9 +2,13 @@ var redis = require('redis');
 var redisClusterSlot = require('./redisClusterSlot');
 var commands = require('./lib/commands');
 
-var connectToLink = function(str) {
+var connectToLink = function(str, auth) {
   spl = str.split(':');
-  return (redis.createClient(spl[1], spl[0]));
+  if (auth) {
+    return (redis.createClient(spl[1], spl[0]).auth(auth));
+  } else {
+    return (redis.createClient(spl[1], spl[0]));
+  }
 }
 
 /*
@@ -17,7 +21,7 @@ function connectToNodesOfCluster (firstLink, callback) {
   var fireStarter = connectToLink(firstLink);
   fireStarter.cluster('nodes', function(err, nodes) {
     if (err) {
-      calback(err, null);
+      callback(err, null);
       return;
     }
     var lines = nodes.split('\n');
@@ -46,9 +50,11 @@ function connectToNodesOfCluster (firstLink, callback) {
 /*
   Connect to all the nodes that form a cluster. Takes an array in the form of
   [
-    {name: "node1", link: "127.0.0.1:6379", slots: [0, 2048]},
-    {name: "node2", link: "127.0.0.1:7379", slots: [2048, 4096]},
+    {name: "node1", link: "127.0.0.1:6379", slots: [0, 2048], auth: foobared},
+    {name: "node2", link: "127.0.0.1:7379", slots: [2048, 4096], auth:foobared},
   ]
+
+  *auth is optional
 
   You decide the allocation of the 4096 slots, but they must be all covered, and
   if you decide to add/remove a node from the "cluster", don't forget to MIGRATE
@@ -60,7 +66,12 @@ function connectToNodes (cluster, callback) {
   var n = cluster.length;
   while (n--) {
     (function (node) {
-    redisLinks.push({name: node.name, link: connectToLink(node.link), slots: node.slots});
+      if (node.auth) {
+        link = connectToLink(node.link, node.auth);
+      } else {
+        link = connectToLink(node.link);
+      }
+      redisLinks.push({name: node.name, link: link, slots: node.slots});
     })(cluster[n]);
     if (n === 0) {
       callback(null, redisLinks);
