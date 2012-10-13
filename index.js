@@ -29,8 +29,8 @@ function connectToNodesOfCluster (firstLink, callback) {
     while (n--) {
       var items = lines[n].split(' ');
       var name = items[0];
-      var link = (items[1] === ':0') ? firstLink : items[1];
       var flags = items[2];
+      var link = (flags === 'myself') ? firstLink : items[1];
       var lastPingSent = items[4];
       var lastPongReceived = items[5];
       var linkState = items[6];
