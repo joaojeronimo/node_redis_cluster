@@ -35,6 +35,7 @@ function connectToNodesOfCluster (firstLink, callback) {
       var lastPongReceived = items[5];
       var linkState = items[6];
       var slots = items[7];
+
       if (linkState === 'connected') {
         redisLinks.push({name: name, link: connectToLink(link), slots: slots.split('-')});
       }
@@ -74,6 +75,7 @@ function connectToNodes (cluster) {
   return (redisLinks);
 }
 
+
 function bindCommands (client, nodes, callback) {
   client.nodes = nodes;
   var n = nodes.length;
@@ -88,7 +90,7 @@ function bindCommands (client, nodes, callback) {
         while (i--) {
           var node = nodes[i];
           var slots = node.slots;
-          if ((slot > slots[0]) && (slot <= slots[1])) {
+          if ((slot >= slots[0]) && (slot <= slots[1])) {
             node.link.send_command(command, o_arguments, o_callback);
           }
         }
