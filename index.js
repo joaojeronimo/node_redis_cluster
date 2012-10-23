@@ -39,9 +39,8 @@ function connectToNodesOfCluster (firstLink, callback) {
         redisLinks.push({name: name, link: connectToLink(link), slots: slots.split('-')});
       }
       if (n === 0) {
-        delete fireStarter;
         callback(null, redisLinks);
-        return redisLinks;
+        return;
       }
     }
   });
@@ -61,49 +60,43 @@ function connectToNodesOfCluster (firstLink, callback) {
   the keys accordingly to the new slots allocation.
 
 */
-function connectToNodes (cluster, callback) {
+function connectToNodes (cluster) {
   var redisLinks = [];
   var n = cluster.length;
   while (n--) {
-    (function (node) {
-      if (node.auth) {
-        link = connectToLink(node.link, node.auth);
-      } else {
-        link = connectToLink(node.link);
-      }
-      redisLinks.push({name: node.name, link: link, slots: node.slots});
-    })(cluster[n]);
-    if (n === 0) {
-      callback(null, redisLinks);
-      return redisLinks;
-    }
+    var node = cluster[n];
+    redisLinks.push({
+      name: node.name,
+      link: (node.auth) ? connectToLink(node.link, node.auth) : connectToLink(node.link),
+      slots: node.slots
+    });
   }
+  return (redisLinks);
 }
 
 function bindCommands (client, nodes, callback) {
   client.nodes = nodes;
+  var n = nodes.length;
   var c = commands.length;
   while (c--) {
-    (function (command, client, nodes) {
+    (function (command) {
       client[command] = function () {
         var o_arguments = Array.prototype.slice.call(arguments);
         var o_callback = o_arguments.pop();
         var slot = redisClusterSlot(o_arguments[0]);
-        var n = nodes.length;
-        while (n--) {
-          (function (node, command, o_arguments, o_callback) {
-            var slots = node.slots
-            if ((slot > slots[0]) && (slot <= slots[1])) {
-              node.link.send_command(command, o_arguments, o_callback);
-            }
-          })(nodes[n], command, o_arguments, o_callback);
+        var i = n;
+        while (i--) {
+          var node = nodes[i];
+          var slots = node.slots;
+          if ((slot > slots[0]) && (slot <= slots[1])) {
+            node.link.send_command(command, o_arguments, o_callback);
+          }
         }
       }
-    })(commands[c], client, nodes);
-    if (c === 0) {
-      callback(null, client);
-    }
+    })(commands[c]);
   }
+  callback(null, client);
+  return;
 }
 
 clusterClient = function (firstLink, callback) {
@@ -119,24 +112,20 @@ clusterClient = function (firstLink, callback) {
         return;
       }
       callback(null, client);
+      return;
     });
   });
 }
 
 poorMansClusterClient = function (cluster, callback) {
   var client = {};
-  connectToNodes(cluster, function (err, nodes) {
+  var nodes = connectToNodes(cluster);
+  bindCommands(client, nodes, function (err, client) {
     if (err) {
-      callback(err, null);
+      callback (err, null);
       return;
     }
-    bindCommands(client, nodes, function (err, client) {
-      if (err) {
-        callback (err, null);
-        return;
-      }
-      callback(null, client);
-    });
+    callback(null, client);
   });
 }
 
