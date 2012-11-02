@@ -46,21 +46,20 @@ var RedisCluster = require('redis-cluster').poorMansClusterClient;
 var assert = require('assert');
 
 var cluster = [
-  {name: 'redis01', link: '127.0.0.1:6379', slots: [0, 1364]},
-  {name: 'redis02', link: '127.0.0.1:7379', slots: [1364, 2370]},
-  {name: 'redis03', link: '127.0.0.1:8379', slots: [2370, 4096]}
+  {name: 'redis01', link: '127.0.0.1:6379', slots: [0, 1363]},
+  {name: 'redis02', link: '127.0.0.1:7379', slots: [1364, 2369]},
+  {name: 'redis03', link: '127.0.0.1:8379', slots: [2370, 4095]}
 ];
 
-new poorMansClusterClient(cluster, function (err, r) {
-  if (err) throw err;
-  r.set('foo', 'bar', function (err, reply) {
-    if (err) throw err;
-    assert.equal(reply,'OK');
+var r = poorMansClusterClient(cluster);
 
-    r.get('foo', function (err, reply) {
-      if (err) throw err;
-      assert.equal(reply, 'bar');
-    });
+r.set('foo', 'bar', function (err, reply) {
+  if (err) throw err;
+  assert.equal(reply,'OK');
+
+  r.get('foo', function (err, reply) {
+    if (err) throw err;
+    assert.equal(reply, 'bar');
   });
 });
 ```
@@ -76,7 +75,7 @@ Some quick test showed it achieved a very similar performance to the `node_redis
 
 # Other notes
 
-This is of course not intended for production and has probably stupid (not bad, stupid) code inside, but I just needed something that works as there are no decent modules to work with Redis Clusters yet. It's also my first nodejs module so go easy on me and don't send me something like [this epic pull request](https://github.com/zenorocha/jquery-boilerplate/pull/10).
+This is of course not intended for production and has probably stupid (not bad, stupid) code inside, but I just needed something that works as there are no modules to work with Redis Clusters yet.
 
 # Credits
 

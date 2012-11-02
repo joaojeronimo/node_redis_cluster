@@ -3,7 +3,7 @@ var redisClusterSlot = require('./redisClusterSlot');
 var commands = require('./lib/commands');
 
 var connectToLink = function(str, auth) {
-  spl = str.split(':');
+  var spl = str.split(':');
   if (auth) {
     return (redis.createClient(spl[1], spl[0]).auth(auth));
   } else {
@@ -40,8 +40,7 @@ function connectToNodesOfCluster (firstLink, callback) {
         redisLinks.push({name: name, link: connectToLink(link), slots: slots.split('-')});
       }
       if (n === 0) {
-        callback(null, redisLinks);
-        return;
+        callback(err, redisLinks);
       }
     }
   });
@@ -68,7 +67,7 @@ function connectToNodes (cluster) {
     var node = cluster[n];
     redisLinks.push({
       name: node.name,
-      link: (node.auth) ? connectToLink(node.link, node.auth) : connectToLink(node.link),
+      link: connectToLink(node.link, node.auth),
       slots: node.slots
     });
   }
@@ -76,7 +75,8 @@ function connectToNodes (cluster) {
 }
 
 
-function bindCommands (client, nodes, callback) {
+function bindCommands (nodes) {
+  var client = {};
   client.nodes = nodes;
   var n = nodes.length;
   var c = commands.length;
@@ -97,39 +97,15 @@ function bindCommands (client, nodes, callback) {
       }
     })(commands[c]);
   }
-  callback(null, client);
-  return;
+  return(client);
 }
 
-clusterClient = function (firstLink, callback) {
-  var client = {};
+module.exports.clusterClient = function (firstLink, callback) {
   connectToNodesOfCluster(firstLink, function (err, nodes) {
-    if (err) {
-      callback(err, null);
-      return;
-    }
-    bindCommands(client, nodes, function (err, client) {
-      if (err) {
-        callback (err, null);
-        return;
-      }
-      callback(null, client);
-      return;
-    });
+    callback(err, bindCommands(nodes));
   });
 }
 
-poorMansClusterClient = function (cluster, callback) {
-  var client = {};
-  var nodes = connectToNodes(cluster);
-  bindCommands(client, nodes, function (err, client) {
-    if (err) {
-      callback (err, null);
-      return;
-    }
-    callback(null, client);
-  });
+module.exports.poorMansClusterClient = function (cluster, callback) {
+  return bindCommands(connectToNodes(cluster));
 }
-
-module.exports.clusterClient = clusterClient;
-module.exports.poorMansClusterClient = poorMansClusterClient;
