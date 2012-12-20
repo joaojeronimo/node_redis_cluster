@@ -9,7 +9,7 @@ var connectToLink = function(str, auth) {
   } else {
     return (redis.createClient(spl[1], spl[0]));
   }
-}
+};
 
 /*
   Connect to a node of a Redis Cluster, discover the other nodes and
@@ -31,8 +31,8 @@ function connectToNodesOfCluster (firstLink, callback) {
       var name = items[0];
       var flags = items[2];
       var link = (flags === 'myself') ? firstLink : items[1];
-      var lastPingSent = items[4];
-      var lastPongReceived = items[5];
+      //var lastPingSent = items[4];
+      //var lastPongReceived = items[5];
       var linkState = items[6];
       var slots = items[7];
 
@@ -94,18 +94,19 @@ function bindCommands (nodes) {
             node.link.send_command(command, o_arguments, o_callback);
           }
         }
-      }
+      };
     })(commands[c]);
   }
   return(client);
 }
 
-module.exports.clusterClient = function (firstLink, callback) {
-  connectToNodesOfCluster(firstLink, function (err, nodes) {
-    callback(err, bindCommands(nodes));
-  });
-}
-
-module.exports.poorMansClusterClient = function (cluster, callback) {
-  return bindCommands(connectToNodes(cluster));
-}
+module.exports = {
+    clusterClient : function (firstLink, callback) {
+      connectToNodesOfCluster(firstLink, function (err, nodes) {
+        callback(err, bindCommands(nodes));
+      });
+    },
+    poorMansClusterClient : function (cluster, callback) {
+      return bindCommands(connectToNodes(cluster));
+    }
+};
