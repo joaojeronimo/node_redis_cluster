@@ -106,7 +106,7 @@ module.exports = {
         callback(err, bindCommands(nodes));
       });
     },
-    poorMansClusterClient : function (cluster, callback) {
+    poorMansClusterClient : function (cluster) {
       return bindCommands(connectToNodes(cluster));
     }
 };
