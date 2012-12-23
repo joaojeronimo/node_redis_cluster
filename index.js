@@ -2,12 +2,13 @@ var redis = require('redis');
 var redisClusterSlot = require('./redisClusterSlot');
 var commands = require('./lib/commands');
 
-var connectToLink = function(str, auth) {
+var connectToLink = function(str, auth, options) {
   var spl = str.split(':');
+  options = options || {};
   if (auth) {
-    return (redis.createClient(spl[1], spl[0]).auth(auth));
+    return (redis.createClient(spl[1], spl[0], options).auth(auth));
   } else {
-    return (redis.createClient(spl[1], spl[0]));
+    return (redis.createClient(spl[1], spl[0], options));
   }
 };
 
@@ -65,9 +66,10 @@ function connectToNodes (cluster) {
   var n = cluster.length;
   while (n--) {
     var node = cluster[n];
+    var options = node.options || {};
     redisLinks.push({
       name: node.name,
-      link: connectToLink(node.link, node.auth),
+      link: connectToLink(node.link, node.auth, options),
       slots: node.slots
     });
   }
