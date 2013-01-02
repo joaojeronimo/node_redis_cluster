@@ -36,7 +36,7 @@ function connectToNodesOfCluster (firstLink, callback) {
       //var lastPongReceived = items[5];
       var linkState = items[6];
 
-      if (lines.length === 1) {
+      if (lines.length === 1 && lines[1] === '') {
         var slots = [0, 4095]
       } else {
         var slots = items[7].split('-');
