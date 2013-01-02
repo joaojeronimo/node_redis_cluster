@@ -2,14 +2,15 @@ var redis = require('redis');
 var redisClusterSlot = require('./redisClusterSlot');
 var commands = require('./lib/commands');
 
-var connectToLink = function(str, auth) {
+var connectToLink = function(str, auth, options) {
   var spl = str.split(':');
+  options = options || {};
   if (auth) {
-    return (redis.createClient(spl[1], spl[0]).auth(auth));
+    return (redis.createClient(spl[1], spl[0], options).auth(auth));
   } else {
-    return (redis.createClient(spl[1], spl[0]));
+    return (redis.createClient(spl[1], spl[0], options));
   }
-}
+};
 
 /*
   Connect to a node of a Redis Cluster, discover the other nodes and
@@ -31,8 +32,8 @@ function connectToNodesOfCluster (firstLink, callback) {
       var name = items[0];
       var flags = items[2];
       var link = (flags === 'myself') ? firstLink : items[1];
-      var lastPingSent = items[4];
-      var lastPongReceived = items[5];
+      //var lastPingSent = items[4];
+      //var lastPongReceived = items[5];
       var linkState = items[6];
 
       if (lines.length === 1) {
@@ -70,9 +71,10 @@ function connectToNodes (cluster) {
   var n = cluster.length;
   while (n--) {
     var node = cluster[n];
+    var options = node.options || {};
     redisLinks.push({
       name: node.name,
-      link: connectToLink(node.link, node.auth),
+      link: connectToLink(node.link, node.auth, options),
       slots: node.slots
     });
   }
@@ -99,18 +101,19 @@ function bindCommands (nodes) {
             node.link.send_command(command, o_arguments, o_callback);
           }
         }
-      }
+      };
     })(commands[c]);
   }
   return(client);
 }
 
-module.exports.clusterClient = function (firstLink, callback) {
-  connectToNodesOfCluster(firstLink, function (err, nodes) {
-    callback(err, bindCommands(nodes));
-  });
-}
-
-module.exports.poorMansClusterClient = function (cluster, callback) {
-  return bindCommands(connectToNodes(cluster));
-}
+module.exports = {
+    clusterClient : function (firstLink, callback) {
+      connectToNodesOfCluster(firstLink, function (err, nodes) {
+        callback(err, bindCommands(nodes));
+      });
+    },
+    poorMansClusterClient : function (cluster) {
+      return bindCommands(connectToNodes(cluster));
+    }
+};

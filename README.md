@@ -46,9 +46,9 @@ var RedisCluster = require('redis-cluster').poorMansClusterClient;
 var assert = require('assert');
 
 var cluster = [
-  {name: 'redis01', link: '127.0.0.1:6379', slots: [0, 1363]},
-  {name: 'redis02', link: '127.0.0.1:7379', slots: [1364, 2369]},
-  {name: 'redis03', link: '127.0.0.1:8379', slots: [2370, 4095]}
+  {name: 'redis01', link: '127.0.0.1:6379', slots: [   0, 1363], options: {max_attempts: 5}},
+  {name: 'redis02', link: '127.0.0.1:7379', slots: [1364, 2369], options: {max_attempts: 5}},
+  {name: 'redis03', link: '127.0.0.1:8379', slots: [2370, 4095], options: {max_attempts: 5}}
 ];
 
 var r = poorMansClusterClient(cluster);
@@ -64,6 +64,8 @@ r.set('foo', 'bar', function (err, reply) {
 });
 ```
 As you noticed, you must specify the interval of slots allocated to each node. All 4096 slots must be covered, otherwise you will run in some nasty errors (some keys might have no where to go).
+
+Options are optional and may be added or left out. All valid options for the redis client may be found in the redis client documentation.
 
 If you decide to re-allocate the slots, add or remove a node, you must move all the affected keys yourself. The [MIGRATE](http://redis.io/commands/migrate) command might help you with that.
 

@@ -1,4 +1,4 @@
-var CRC16_TAB = new Array(
+var CRC16_TAB = [
   // C/C++ language:
   //
   // unsigned short CRC16_TAB[] = {...};
@@ -22,24 +22,22 @@ var CRC16_TAB = new Array(
   0x1AD0,0x2AB3,0x3A92,0xFD2E,0xED0F,0xDD6C,0xCD4D,0xBDAA,0xAD8B,0x9DE8,0x8DC9,0x7C26,0x6C07,
   0x5C64,0x4C45,0x3CA2,0x2C83,0x1CE0,0x0CC1,0xEF1F,0xFF3E,0xCF5D,0xDF7C,0xAF9B,0xBFBA,0x8FD9,
   0x9FF8,0x6E17,0x7E36,0x4E55,0x5E74,0x2E93,0x3EB2,0x0ED1,0x1EF0
-);
+];
 
 function crc16Add(crc,c) {  // 'crc' should be initialized to 0x0000.
   return CRC16_TAB[((crc>>8)^c)&0xFF]^((crc<<8)&0xFFFF);
 };
 
 function crc16(str) {
-  var i = len,
-    len = str.length,
-    crc = 0;
+  var i = len;
+  var len = str.length;
+  var crc = 0;
   for(i = 0; i < len; i++) {
     crc = crc16Add(crc, str.charCodeAt(i));
   }
   return crc;
 };
 
-var redisClusterSlot = function (str) {
+module.exports = function (str) { // Previously called redisClusterSlot
   return(crc16(str) % 4096);
 }
-
-module.exports = redisClusterSlot;
