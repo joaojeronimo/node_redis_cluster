@@ -34,10 +34,15 @@ function connectToNodesOfCluster (firstLink, callback) {
       var lastPingSent = items[4];
       var lastPongReceived = items[5];
       var linkState = items[6];
-      var slots = items[7];
 
+      if (lines.length === 1) {
+        var slots = [0, 4095]
+      } else {
+        var slots = items[7].split('-');
+      }
+      
       if (linkState === 'connected') {
-        redisLinks.push({name: name, link: connectToLink(link), slots: slots.split('-')});
+        redisLinks.push({name: name, link: connectToLink(link), slots: slots});
       }
       if (n === 0) {
         callback(err, redisLinks);
