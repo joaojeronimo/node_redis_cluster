@@ -43,7 +43,7 @@ new redisPubSub.clusterInstance(firstLink, function (err, r) {
         // New message in a channel, necessarily 'channel' here because it's the only one we're subscribed to.
     });
   }
-}
+});
 ```
 
 Don't forget that despite being a thin wrapper above `node_redis`, you still can't use all the commands you would use against a normal Redis server. For instance, don't expect the `KEYS` command to work (in fact, in the [Redis Cluster spec](http://redis.io/topics/cluster-spec) it says that "all the operations where in theory keys are not available in the same node are not implemented").
