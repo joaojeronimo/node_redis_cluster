@@ -26,22 +26,22 @@ function connectToNodesOfCluster (firstLink, callback) {
       return;
     }
     var lines = nodes.split('\n');
-    var n = lines.length;
+    var n = lines.length -1;
     while (n--) {
       var items = lines[n].split(' ');
       var name = items[0];
       var flags = items[2];
-      var link = (flags === 'myself') ? firstLink : items[1];
+      var link = ( flags === 'myself' || flags === 'myself,master') ? firstLink : items[1];
       //var lastPingSent = items[4];
       //var lastPongReceived = items[5];
       var linkState = items[6];
 
       if (lines.length === 1 && lines[1] === '') {
-        var slots = [0, 4095]
+        var slots = [0, 16383]
       } else {
         var slots = items[7].split('-');
       }
-      
+
       if (linkState === 'connected') {
         redisLinks.push({name: name, link: connectToLink(link), slots: slots});
       }
@@ -55,8 +55,8 @@ function connectToNodesOfCluster (firstLink, callback) {
 /*
   Connect to all the nodes that form a cluster. Takes an array in the form of
   [
-    {name: "node1", link: "127.0.0.1:6379", slots: [0, 2048], auth: foobared},
-    {name: "node2", link: "127.0.0.1:7379", slots: [2048, 4096], auth:foobared},
+    {name: "node1", link: "127.0.0.1:6379", slots: [0, 8192], auth: foobared},
+    {name: "node2", link: "127.0.0.1:7379", slots: [8193, 16384], auth:foobared},
   ]
 
   *auth is optional
@@ -81,7 +81,6 @@ function connectToNodes (cluster) {
   return (redisLinks);
 }
 
-
 function bindCommands (nodes) {
   var client = {};
   client.nodes = nodes;
@@ -91,7 +90,13 @@ function bindCommands (nodes) {
     (function (command) {
       client[command] = function () {
         var o_arguments = Array.prototype.slice.call(arguments);
-        var o_callback = o_arguments.pop();
+        // Taken from code in node-redis.
+        var last_arg_type = typeof o_arguments[o_arguments.length - 1];
+
+        if (last_arg_type === 'function') {
+          var o_callback = o_arguments.pop();
+        }
+
         var slot = redisClusterSlot(o_arguments[0]);
         var i = n;
         while (i--) {
@@ -108,10 +113,14 @@ function bindCommands (nodes) {
 }
 
 module.exports = {
-    clusterClient : function (firstLink, callback) {
-      connectToNodesOfCluster(firstLink, function (err, nodes) {
-        callback(err, bindCommands(nodes));
-      });
+    clusterClient : {
+      redisLinks: null,
+      clusterInstance: function (firstLink, callback) {
+        connectToNodesOfCluster(firstLink, function (err, nodes) {
+          module.exports.clusterClient.redisLinks = nodes;
+          callback(err, bindCommands(nodes));
+        });
+      }
     },
     poorMansClusterClient : function (cluster) {
       return bindCommands(connectToNodes(cluster));

@@ -39,5 +39,5 @@ function crc16(str) {
 };
 
 module.exports = function (str) { // Previously called redisClusterSlot
-  return(crc16(str) % 4096);
+  return(crc16(str) % 16384);
 }
