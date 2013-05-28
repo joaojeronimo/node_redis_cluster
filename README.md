@@ -4,7 +4,7 @@
 
 Redis Cluster is coming out later this year, but I can't wait for it so I made this module.
 
-All it does is connect to the nodes of a Redis Cluster, and before sending any commands it checks in which slot the key is with `HASH_SLOT = CRC16(key) mod 4096` and then sends the command to the node that has that slot.
+All it does is connect to the nodes of a Redis Cluster, and before sending any commands it checks in which slot the key is with `HASH_SLOT = CRC16(key) mod 16384` and then sends the command to the node that has that slot.
 
 # Installation
 
@@ -16,10 +16,12 @@ This module exports two objects. `clusterClient` is to be used with a regular Re
 
 ```javascript
 var RedisCluster = require('redis-cluster').clusterClient;
+var redis = RedisCluster;
+var redisPubSub = RedisCluster;
 var assert = require('assert');
 
 var firstLink = '127.0.0.1:6379'; // Used to discover the rest of the cluster
-new RedisCluster(firstLink, function (err, r) {
+new redis.clusterInstance(firstLink, function (err, r) {
   if (err) throw err;
   r.set('foo', 'bar', function (err, reply) {
     if (err) throw err;
@@ -30,6 +32,17 @@ new RedisCluster(firstLink, function (err, r) {
       assert.equal(reply, 'bar');
     });
   });
+});
+
+new redisPubSub.clusterInstance(firstLink, function (err, r) {
+  r.subscribe('channel');
+
+  for( var link in redisPubSub.redisLinks )
+  {
+    redisPubSub.redisLinks[link].link.on('message', function (channel, message) {
+        // New message in a channel, necessarily 'channel' here because it's the only one we're subscribed to.
+    });
+  }
 });
 ```
 
@@ -46,9 +59,9 @@ var RedisCluster = require('redis-cluster').poorMansClusterClient;
 var assert = require('assert');
 
 var cluster = [
-  {name: 'redis01', link: '127.0.0.1:6379', slots: [   0, 1363], options: {max_attempts: 5}},
-  {name: 'redis02', link: '127.0.0.1:7379', slots: [1364, 2369], options: {max_attempts: 5}},
-  {name: 'redis03', link: '127.0.0.1:8379', slots: [2370, 4095], options: {max_attempts: 5}}
+  {name: 'redis01', link: '127.0.0.1:6379', slots: [   0, 5462], options: {max_attempts: 5}},
+  {name: 'redis02', link: '127.0.0.1:7379', slots: [5463, 12742], options: {max_attempts: 5}},
+  {name: 'redis03', link: '127.0.0.1:8379', slots: [12743, 16384], options: {max_attempts: 5}}
 ];
 
 var r = poorMansClusterClient(cluster);
@@ -63,7 +76,7 @@ r.set('foo', 'bar', function (err, reply) {
   });
 });
 ```
-As you noticed, you must specify the interval of slots allocated to each node. All 4096 slots must be covered, otherwise you will run in some nasty errors (some keys might have no where to go).
+As you noticed, you must specify the interval of slots allocated to each node. All 16384 slots must be covered, otherwise you will run in some nasty errors (some keys might have no where to go).
 
 Options are optional and may be added or left out. All valid options for the redis client may be found in the redis client documentation.
 
