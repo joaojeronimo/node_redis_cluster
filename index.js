@@ -107,7 +107,8 @@ function bindCommands (nodes) {
           var o_callback = o_arguments.pop();
         }
 
-        var slot = redisClusterSlot(o_arguments[0]);
+        //for commands such as PING use slot 0
+        var slot = o_arguments[0] ? redisClusterSlot(o_arguments[0]) : 0;
         var i = n;
         while (i--) {
           var node = nodes[i];
