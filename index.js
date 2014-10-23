@@ -31,7 +31,13 @@ function connectToNodesOfCluster (firstLink, callback) {
       var items = lines[n].split(' ');
       var name = items[0];
       var flags = items[2];
-      var link = ( flags === 'myself' || flags === 'myself,master') ? firstLink : items[1];
+      var link = ( flags === 'myself' || flags === 'myself,master' || flags === 'myself,slave') ? firstLink : items[1];
+      if(flags === 'slave' || flags === 'myself,slave') {
+          if (n === 0) {
+            callback(err, redisLinks);
+          }
+          continue;
+      }
       //var lastPingSent = items[4];
       //var lastPongReceived = items[5];
       var linkState = items[6];
