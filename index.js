@@ -45,9 +45,13 @@ function connectToNodesOfCluster (firstLink, callback) {
       if (lines.length === 1 && lines[1] === '') {
         var slots = [0, 16383]
       } else {
-        var slots = items[7].split('-');
+        var slots = [];
+        for(var i = 8; i<items.length;i++) {
+            var t = items[i].split('-');
+            slots.push(t[0], t[1]);
+        }
       }
-
+      
       if (linkState === 'connected') {
         redisLinks.push({name: name, link: connectToLink(link), slots: slots});
       }
@@ -108,8 +112,10 @@ function bindCommands (nodes) {
         while (i--) {
           var node = nodes[i];
           var slots = node.slots;
-          if ((slot >= slots[0]) && (slot <= slots[1])) {
-            node.link.send_command(command, o_arguments, o_callback);
+          for(var r=0;r<slots.length;r+=2) {
+              if ((slot >= slots[r]) && (slot <= slots[r+1])) {
+                node.link.send_command(command, o_arguments, o_callback);
+              }
           }
         }
       };
