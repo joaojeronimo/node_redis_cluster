@@ -40,7 +40,7 @@ function connectToNodesOfCluster (firstLink, callback) {
       }
       //var lastPingSent = items[4];
       //var lastPongReceived = items[5];
-      var linkState = items[6];
+      var linkState = items[7];
 
       if (lines.length === 1 && lines[1] === '') {
         var slots = [0, 16383]
