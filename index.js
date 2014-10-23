@@ -35,7 +35,8 @@ function connectToNodesOfCluster (firstLink, callback) {
       if(flags === 'slave' || flags === 'myself,slave') {
           if (n === 0) {
             callback(err, redisLinks);
-          }
+            return;
+          } 
           continue;
       }
       //var lastPingSent = items[4];
