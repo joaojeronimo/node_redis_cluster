@@ -31,17 +31,28 @@ function connectToNodesOfCluster (firstLink, callback) {
       var items = lines[n].split(' ');
       var name = items[0];
       var flags = items[2];
-      var link = ( flags === 'myself' || flags === 'myself,master') ? firstLink : items[1];
+      var link = ( flags === 'myself' || flags === 'myself,master' || flags === 'myself,slave') ? firstLink : items[1];
+      if(flags === 'slave' || flags === 'myself,slave') {
+          if (n === 0) {
+            callback(err, redisLinks);
+            return;
+          } 
+          continue;
+      }
       //var lastPingSent = items[4];
       //var lastPongReceived = items[5];
-      var linkState = items[6];
+      var linkState = items[7];
 
       if (lines.length === 1 && lines[1] === '') {
         var slots = [0, 16383]
       } else {
-        var slots = items[7].split('-');
+        var slots = [];
+        for(var i = 8; i<items.length;i++) {
+            var t = items[i].split('-');
+            slots.push(t[0], t[1]);
+        }
       }
-
+      
       if (linkState === 'connected') {
         redisLinks.push({name: name, link: connectToLink(link), slots: slots});
       }
@@ -97,13 +108,16 @@ function bindCommands (nodes) {
           var o_callback = o_arguments.pop();
         }
 
-        var slot = redisClusterSlot(o_arguments[0]);
+        //for commands such as PING use slot 0
+        var slot = o_arguments[0] ? redisClusterSlot(o_arguments[0]) : 0;
         var i = n;
         while (i--) {
           var node = nodes[i];
           var slots = node.slots;
-          if ((slot >= slots[0]) && (slot <= slots[1])) {
-            node.link.send_command(command, o_arguments, o_callback);
+          for(var r=0;r<slots.length;r+=2) {
+              if ((slot >= slots[r]) && (slot <= slots[r+1])) {
+                node.link.send_command(command, o_arguments, o_callback);
+              }
           }
         }
       };
