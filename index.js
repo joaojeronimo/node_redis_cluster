@@ -1,4 +1,9 @@
 var redis = require('redis');
+var fastRedis = null;
+try {
+  fastRedis = require('redis-fast-driver');
+} catch(e) {}
+
 var redisClusterSlot = require('./redisClusterSlot');
 var commands = require('./lib/commands');
 
@@ -6,8 +11,21 @@ var connectToLink = function(str, auth, options) {
   var spl = str.split(':');
   options = options || {};
   if (auth) {
+    if(fastRedis) {
+      return new fastRedis({
+        host: spl[0],
+        port: spl[1],
+        auth: auth
+      });
+    }
     return (redis.createClient(spl[1], spl[0], options).auth(auth));
   } else {
+    if(fastRedis) {
+      return new fastRedis({
+        host: spl[0],
+        port: spl[1]
+      });
+    }
     return (redis.createClient(spl[1], spl[0], options));
   }
 };
@@ -20,7 +38,10 @@ var connectToLink = function(str, auth, options) {
 function connectToNodesOfCluster (firstLink, callback) {
   var redisLinks = [];
   var fireStarter = connectToLink(firstLink);
-  fireStarter.cluster('nodes', function(err, nodes) {
+  var clusterFn = fastRedis ? function(subcommand, cb) {
+    fireStarter.rawCall(['cluster', subcommand], cb);
+  } : fireStarter.cluster.bind(fireStarter);
+  clusterFn('nodes', function(err, nodes) {
     if (err) {
       callback(err, null);
       return;
@@ -101,6 +122,26 @@ function bindCommands (nodes) {
     (function (command) {
       client[command] = function () {
         var o_arguments = Array.prototype.slice.call(arguments);
+        
+        //Array.indexOf used for any other special functions that needs to be converted to something else
+        if(fastRedis && ['hmset'].indexOf(command) !== -1) {
+          //special functions
+          if(command === 'hmset') {
+            if(typeof arguments[1] === 'object') {
+              // making from a
+              //   redis.hmset('a', {a:1,b:2,c:3}, cb)
+              // a
+              //   redis.hmset('a', 'a', 1, 'b', 2, 'c', 3, cb);
+              var tmp = [1,1];
+              for(var k in arguments[1]) {
+                tmp.push(k);
+                tmp.push(arguments[1][k]);
+              }
+              Array.prototype.splice.apply(o_arguments, tmp);
+            }
+          }
+        }
+        
         // Taken from code in node-redis.
         var last_arg_type = typeof o_arguments[o_arguments.length - 1];
 
@@ -116,6 +157,36 @@ function bindCommands (nodes) {
           var slots = node.slots;
           for(var r=0;r<slots.length;r+=2) {
               if ((slot >= slots[r]) && (slot <= slots[r+1])) {
+                if(fastRedis) {
+                  o_arguments.unshift(command);
+                  if(command === 'hgetall') {
+                    node.link.rawCall(o_arguments, function(e, d){
+                      if(!o_callback) return;
+                      if(e) return o_callback(e);
+                      if(!Array.isArray(d) || d.length < 1) return o_callback(e, d);
+                      var obj = {};
+                      for(var i=0;i<d.length;i+=2) {
+                        obj[d[i]] = d[i+1];
+                      }
+                      o_callback(e, obj);
+                    });
+                    continue;
+                  }
+                  if(command === 'hmget') {
+                    node.link.rawCall(o_arguments, function(e, d){
+                      if(!o_callback) return;
+                      if(e) return o_callback(e);
+                      var obj = {};
+                      for(var i=0;i<d.length;i++) {
+                        obj[o_arguments[i+2]] = d[i];
+                      }
+                      o_callback(e, obj);
+                    });
+                    continue;
+                  }
+                  node.link.rawCall(o_arguments, o_callback);
+                  continue;
+                }
                 node.link.send_command(command, o_arguments, o_callback);
               }
           }
