@@ -1,4 +1,5 @@
 var redis = require('redis');
+var events = require('events');
 var fastRedis = null;
 try {
   fastRedis = require('redis-fast-driver');
@@ -12,19 +13,27 @@ var connectToLink = function(str, auth, options) {
   options = options || {};
   if (auth) {
     if(fastRedis) {
-      return new fastRedis({
-        host: spl[0],
-        port: spl[1],
-        auth: auth
-      });
+        var link =new fastRedis({
+          host: spl[0],
+          port: spl[1],
+          auth: auth
+        });
+        link.on('error', function onErrorFromRedisDriver(err){
+          console.log('error from redis driver %s:', str, err);
+        });
+        return link;
     }
     return (redis.createClient(spl[1], spl[0], options).auth(auth));
   } else {
     if(fastRedis) {
-      return new fastRedis({
+      var link =new fastRedis({
         host: spl[0],
         port: spl[1]
       });
+      link.on('error', function onErrorFromRedisDriver(err){
+        console.log('error from redis driver %s:', str, err);
+      });
+      return link;
     }
     return (redis.createClient(spl[1], spl[0], options));
   }
@@ -127,8 +136,16 @@ function connectToNodes (cluster) {
 }
 
 function bindCommands (nodes, oldClient) {
-  var client = oldClient || {};
+  var client = oldClient || new events.EventEmitter();
   client.nodes = nodes;
+  //catch on error from nodes
+  function onError(err) {
+    console.log('got error from ', this);
+    client.emit('error', err);
+  }
+  for(var i=0;i<nodes.length;i++) {
+    nodes[i].link.on('error', onError.bind(nodes[i]));
+  }
   var n = nodes.length;
   var c = commands.length;
   while (c--) {
@@ -248,7 +265,7 @@ function bindCommands (nodes, oldClient) {
           }
         }
         
-        throw 'slot '+slot+' found on no nodes';
+        throw new Error('slot '+slot+' found on no nodes');
         
         function callNode(node, argumentsAlreadyFixed) {
           // console.log('callNode',node);
