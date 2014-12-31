@@ -195,7 +195,7 @@ function bindCommands (nodes, oldClient) {
             // ASK error example: ASK 12182 127.0.0.1:7001
             // When we got ASK error, we need just repeat a request on right node with ASKING command
             // If after ASK we got MOVED err, thats mean no key found
-            if(e.substr(0, 3)==='ASK') {
+            if(e.toString().substr(0, 3)==='ASK') {
               if(redirections++ > 5) {
                 if(o_callback)
                   o_callback('Too much redirections');
@@ -221,7 +221,7 @@ function bindCommands (nodes, oldClient) {
               if(o_callback)
                 o_callback('Requested node for redirection not found `%s`', connectStr);
               return;
-            } else if(e.substr(0, 5) === 'MOVED') {
+            } else if(e.toString().substr(0, 5) === 'MOVED') {
               //MOVED error example: MOVED 12182 127.0.0.1:7002
               //this is our trigger when cluster topology is changed
               //console.log('got MOVED');

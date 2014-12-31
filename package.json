@@ -1,5 +1,5 @@
 {   "name" : "redis-cluster",
-    "version" : "0.0.8",
+    "version" : "0.0.9",
     "description" : "Redis cluster client library",
     "author": "Arenit,João Jerónimo <jj@crowdprocess.com>",
 	"contributors": ["Arseniy Pavlenko <h0x91b@gmail.com>"],
