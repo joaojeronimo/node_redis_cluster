@@ -1,4 +1,5 @@
 var redis = require('redis');
+var events = require('events');
 var fastRedis = null;
 try {
   fastRedis = require('redis-fast-driver');
@@ -12,19 +13,27 @@ var connectToLink = function(str, auth, options) {
   options = options || {};
   if (auth) {
     if(fastRedis) {
-      return new fastRedis({
-        host: spl[0],
-        port: spl[1],
-        auth: auth
-      });
+        var link =new fastRedis({
+          host: spl[0],
+          port: spl[1],
+          auth: auth
+        });
+        link.on('error', function onErrorFromRedisDriver(err){
+          console.log('error from redis driver %s:', str, err);
+        });
+        return link;
     }
     return (redis.createClient(spl[1], spl[0], options).auth(auth));
   } else {
     if(fastRedis) {
-      return new fastRedis({
+      var link =new fastRedis({
         host: spl[0],
         port: spl[1]
       });
+      link.on('error', function onErrorFromRedisDriver(err){
+        console.log('error from redis driver %s:', str, err);
+      });
+      return link;
     }
     return (redis.createClient(spl[1], spl[0], options));
   }
@@ -127,8 +136,16 @@ function connectToNodes (cluster) {
 }
 
 function bindCommands (nodes, oldClient) {
-  var client = oldClient || {};
+  var client = oldClient || new events.EventEmitter();
   client.nodes = nodes;
+  //catch on error from nodes
+  function onError(err) {
+    console.log('got error from ', this);
+    client.emit('error', err);
+  }
+  for(var i=0;i<nodes.length;i++) {
+    nodes[i].link.on('error', onError.bind(nodes[i]));
+  }
   var n = nodes.length;
   var c = commands.length;
   while (c--) {
@@ -178,7 +195,7 @@ function bindCommands (nodes, oldClient) {
             // ASK error example: ASK 12182 127.0.0.1:7001
             // When we got ASK error, we need just repeat a request on right node with ASKING command
             // If after ASK we got MOVED err, thats mean no key found
-            if(e.substr(0, 3)==='ASK') {
+            if(e.toString().substr(0, 3)==='ASK') {
               if(redirections++ > 5) {
                 if(o_callback)
                   o_callback('Too much redirections');
@@ -204,7 +221,7 @@ function bindCommands (nodes, oldClient) {
               if(o_callback)
                 o_callback('Requested node for redirection not found `%s`', connectStr);
               return;
-            } else if(e.substr(0, 5) === 'MOVED') {
+            } else if(e.toString().substr(0, 5) === 'MOVED') {
               //MOVED error example: MOVED 12182 127.0.0.1:7002
               //this is our trigger when cluster topology is changed
               //console.log('got MOVED');
@@ -248,7 +265,7 @@ function bindCommands (nodes, oldClient) {
           }
         }
         
-        throw 'slot '+slot+' found on no nodes';
+        throw new Error('slot '+slot+' found on no nodes');
         
         function callNode(node, argumentsAlreadyFixed) {
           // console.log('callNode',node);
