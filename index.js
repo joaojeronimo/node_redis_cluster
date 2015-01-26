@@ -51,7 +51,11 @@ function connectToNodesOfCluster (firstLink, callback) {
     fireStarter.rawCall(['cluster', subcommand], cb);
   } : fireStarter.cluster.bind(fireStarter);
   clusterFn('nodes', function(err, nodes) {
-    if (err) {
+    if(err && err.indexOf('cluster support disabled') !== -1) {
+      err = null;
+      var port = firstLink.split(':').pop();
+      nodes = '0000000000000000000000000000000000000000 :'+port+' myself,master - 0 0 1 connected 0-16383\n';
+    } else if (err) {
       callback(err, null);
       return;
     }
@@ -313,6 +317,9 @@ module.exports = {
       redisLinks: null,
       clusterInstance: function (firstLink, callback) {
         connectToNodesOfCluster(firstLink, function (err, nodes) {
+          if(err) {
+            return callback(err);
+          }
           module.exports.clusterClient.redisLinks = nodes;
           callback(err, bindCommands(nodes));
         });
