@@ -1,17 +1,21 @@
-{   "name" : "redis-cluster",
-    "version" : "0.0.9",
-    "description" : "Redis cluster client library",
-    "author": "Arenit,João Jerónimo <jj@crowdprocess.com>",
-	"contributors": ["Arseniy Pavlenko <h0x91b@gmail.com>"],
-    "main": "./index.js",
-    "dependencies" : {
-        "redis" : "0.8.x"
-    },
-    "optionalDependencies": {
-        "redis-fast-driver": "*"
-    },
-    "repository": {
-        "type": "git",
-        "url": "git@github.com:joaojeronimo/node_redis_cluster.git"
-    }
+{
+  "name": "redis-cluster",
+  "version": "0.0.10",
+  "description": "Redis cluster client library",
+  "author": "Arenit,João Jerónimo <jj@crowdprocess.com>",
+  "contributors": [
+    "Arseniy Pavlenko <h0x91b@gmail.com>"
+  ],
+  "main": "./index.js",
+  "dependencies": {
+    "node-redis-crc16": "~0.0.2",
+    "redis": "0.8.x"
+  },
+  "optionalDependencies": {
+    "redis-fast-driver": "*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:joaojeronimo/node_redis_cluster.git"
+  }
 }
