@@ -23,3 +23,5 @@ Client.prototype.getNode = function (key) {
             return node;
     }
 };
+
+module.exports = Client;
