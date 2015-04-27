@@ -5,6 +5,7 @@ try {
   fastRedis = require('redis-fast-driver');
 } catch(e) {}
 
+var Client = require('./Client');
 var redisClusterSlot = require('./redisClusterSlot');
 var commands = require('./lib/commands');
 
@@ -140,7 +141,7 @@ function connectToNodes (cluster) {
 }
 
 function bindCommands (nodes, oldClient) {
-  var client = oldClient || new events.EventEmitter();
+  var client = oldClient || new Client();
   client.nodes = nodes;
   //catch on error from nodes
   function onError(err) {
